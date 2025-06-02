@@ -1,3 +1,4 @@
+
 "use server";
 
 import { z } from "zod";
@@ -53,9 +54,18 @@ export async function addProductAction(
     const storageRef = ref(storage, `product_images/${Date.now()}_${imageFile.name}`);
     const snapshot = await uploadBytes(storageRef, imageFile);
     imageUrl = await getDownloadURL(snapshot.ref);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error uploading image:", error);
-    return { errors: { _form: ["Failed to upload image. Please try again."] }, message: "Image upload failed.", success: false };
+    let detailedMessage = "Failed to upload image. Please try again.";
+    if (error.code) {
+      detailedMessage = `Image upload failed: ${error.code}. Please check Firebase Storage rules or server logs.`;
+      if (error.message) {
+         detailedMessage += ` Details: ${error.message}`;
+      }
+    } else if (error.message) {
+      detailedMessage = `Image upload failed: ${error.message}`;
+    }
+    return { errors: { _form: [detailedMessage] }, message: detailedMessage, success: false };
   }
 
   try {
@@ -66,8 +76,14 @@ export async function addProductAction(
     });
     revalidatePath("/");
     return { message: "Product added successfully!", success: true, errors: null };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error adding product to Firestore:", error);
-    return { message: "Failed to add product to database. Please try again.", success: false, errors: { _form: ["Database error."] } };
+    let detailedMessage = "Failed to add product to database. Please try again.";
+     if (error.code) {
+      detailedMessage += ` (Error code: ${error.code})`;
+    } else if (error.message) {
+      detailedMessage += ` (${error.message})`;
+    }
+    return { message: detailedMessage, success: false, errors: { _form: [detailedMessage] } };
   }
 }
