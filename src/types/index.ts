@@ -1,3 +1,4 @@
+
 import type { Timestamp } from "firebase/firestore";
 
 export interface Product {
@@ -13,7 +14,7 @@ export interface ProductFormData {
   name: string;
   description: string;
   price: number;
-  image?: File | null;
+  imageUrl: string; // Changed from image?: File | null;
 }
 
 export type AddProductActionState = {
@@ -22,7 +23,7 @@ export type AddProductActionState = {
     name?: string[];
     description?: string[];
     price?: string[];
-    image?: string[];
+    imageUrl?: string[]; // Changed from image
     _form?: string[];
   } | null;
   success?: boolean;

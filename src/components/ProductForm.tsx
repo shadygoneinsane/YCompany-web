@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useEffect, useState, useRef, useActionState } from "react";
+import { useEffect, useRef, useActionState } from "react"; // useState and Image removed
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+// import Image from "next/image"; // No longer needed for preview
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { addProductAction } from "@/actions/productActions";
 import type { ProductFormData, AddProductActionState } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { UploadCloud, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react"; // UploadCloud removed
 import LoadingSpinner from "./ui/loading-spinner";
 
 
@@ -24,12 +24,7 @@ const FormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long."),
   description: z.string().min(10, "Description must be at least 10 characters long."),
   price: z.coerce.number().positive("Price must be a positive number."),
-  image: z.instanceof(File).refine(file => file.size > 0, "Image is required.")
-    .refine(file => file.size <= 5 * 1024 * 1024, `Max file size is 5MB.`)
-    .refine(
-      file => ["image/jpeg", "image/png", "image/webp"].includes(file.type),
-      "Only .jpg, .png, .webp formats are supported."
-    ).optional() // Optional in schema, server action handles if null
+  imageUrl: z.string().url("Please enter a valid URL for the image."), // Changed from image file
 });
 
 
@@ -44,17 +39,17 @@ function SubmitButton() {
 
 export default function ProductForm() {
   const [initialState, action] = useActionState<AddProductActionState | undefined, FormData>(addProductAction, undefined);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // const [imagePreview, setImagePreview] = useState<string | null>(null); // Removed image preview
   const router = useRouter();
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
   const {
     control,
-    handleSubmit,
+    // handleSubmit, // handleSubmit from RHF is not used with server actions in this setup
     formState: { errors: clientErrors },
-    setValue,
-    watch,
+    // setValue, // setValue for image is no longer needed
+    // watch, // watch for image is no longer needed
     reset
   } = useForm<ProductFormData>({
     resolver: zodResolver(FormSchema),
@@ -62,23 +57,23 @@ export default function ProductForm() {
       name: "",
       description: "",
       price: 0,
-      image: null,
+      imageUrl: "", // Default imageUrl to empty string
     },
   });
   
-  const selectedImage = watch("image");
+  // const selectedImage = watch("image"); // Removed
 
-  useEffect(() => {
-    if (selectedImage) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(selectedImage);
-    } else {
-      setImagePreview(null);
-    }
-  }, [selectedImage]);
+  // useEffect(() => { // Removed image preview effect
+  //   if (selectedImage) {
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       setImagePreview(reader.result as string);
+  //     };
+  //     reader.readAsDataURL(selectedImage);
+  //   } else {
+  //     setImagePreview(null);
+  //   }
+  // }, [selectedImage]);
 
   useEffect(() => {
     if (initialState?.success) {
@@ -87,8 +82,8 @@ export default function ProductForm() {
         description: initialState.message,
       });
       reset(); // Reset react-hook-form fields
-      setImagePreview(null); // Clear image preview
-      formRef.current?.reset(); // Reset the native form element to clear file input
+      // setImagePreview(null); // Clear image preview - removed
+      formRef.current?.reset(); // Reset the native form element
       router.push("/");
     } else if (initialState?.message && !initialState?.success) {
       toast({
@@ -140,36 +135,32 @@ export default function ProductForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="image">Product Image</Label>
+            <Label htmlFor="imageUrl">Product Image URL</Label>
             <Controller
-              name="image"
+              name="imageUrl"
               control={control}
-              render={({ field: { onChange, value, ...restField } }) => (
+              render={({ field }) => (
                  <Input 
-                  id="image" 
-                  type="file" 
-                  accept="image/png, image/jpeg, image/webp"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    onChange(file); // RHF's onChange
-                    setValue("image", file); // Explicitly set value for RHF
-                  }}
-                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                  {...restField} 
+                  id="imageUrl" 
+                  type="url" // Changed type to url for better semantics, though text also works
+                  placeholder="https://example.com/image.png"
+                  {...field}
                 />
               )}
             />
-            {allErrors?.image && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{allErrors.image[0]}</p>}
+            {allErrors?.imageUrl && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{allErrors.imageUrl[0]}</p>}
           </div>
 
-          {imagePreview && (
+          {/* Image preview section removed */}
+          {/* {imagePreview && (
             <div className="mt-4">
               <Label>Image Preview</Label>
               <div className="mt-2 relative w-full aspect-video rounded-md overflow-hidden border border-muted">
                 <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="contain" />
               </div>
             </div>
-          )}
+          )} */}
+
            {initialState?.errors?._form && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{initialState.errors._form[0]}</p>}
         </CardContent>
         <CardFooter>
