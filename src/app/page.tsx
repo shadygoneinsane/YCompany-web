@@ -14,16 +14,20 @@ async function getProducts(): Promise<ProductType[]> {
     
     const productList = productSnapshot.docs.map(doc => {
       const data = doc.data();
-      // Ensure createdAt is correctly structured if it's a Firestore Timestamp
-      let createdAt = data.createdAt;
-      if (createdAt instanceof Timestamp) {
-         // This is fine for server components. If passed to client, convert to serializable.
-         // For ProductCard (server component), Timestamp object is fine.
-      } else if (typeof createdAt === 'object' && createdAt !== null && 'seconds' in createdAt && 'nanoseconds' in createdAt) {
-        // Already in a serializable-like format, but it's better to keep it as Timestamp if possible on server
+      let createdAtData: ProductType['createdAt'];
+
+      if (data.createdAt instanceof Timestamp) {
+        createdAtData = {
+          seconds: data.createdAt.seconds,
+          nanoseconds: data.createdAt.nanoseconds,
+        };
+      } else if (typeof data.createdAt === 'object' && data.createdAt !== null && 'seconds' in data.createdAt && 'nanoseconds' in data.createdAt) {
+        // Already in the desired plain object format
+        createdAtData = data.createdAt;
       } else {
         // Fallback or error handling if createdAt is not in expected format
-        createdAt = Timestamp.now(); // Or some default
+        const now = Timestamp.now();
+        createdAtData = { seconds: now.seconds, nanoseconds: now.nanoseconds };
       }
 
       return {
@@ -32,7 +36,7 @@ async function getProducts(): Promise<ProductType[]> {
         description: data.description || "No description available.",
         price: typeof data.price === 'number' ? data.price : 0,
         imageUrl: data.imageUrl || "",
-        createdAt: createdAt,
+        createdAt: createdAtData,
       } as ProductType;
     });
     return productList;

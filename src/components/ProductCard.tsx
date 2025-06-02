@@ -1,40 +1,58 @@
 
+"use client";
+
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Product } from '@/types';
-import { format } from 'date-fns'; // For formatting timestamp if needed
+import { format } from 'date-fns';
+import { useState, useEffect } from 'react';
 
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const [imageLoadError, setImageLoadError] = useState(false);
   const displayPrice = typeof product.price === 'number' ? product.price.toFixed(2) : 'N/A';
-  
+
   let displayDate = "Date not available";
   if (product.createdAt && 'seconds' in product.createdAt) {
     try {
-      displayDate = format(new Date(product.createdAt.seconds * 1000), 'PP'); // e.g. Sep 28, 2023
+      displayDate = format(new Date(product.createdAt.seconds * 1000), 'PP');
     } catch (e) {
-      // If date is invalid for some reason
       console.warn("Failed to format product date:", e);
     }
   }
 
+  useEffect(() => {
+    // Reset error state if product.imageUrl changes (e.g., if the component is re-used with new props)
+    setImageLoadError(false);
+  }, [product.imageUrl]);
+
+  const handleImageError = () => {
+    setImageLoadError(true);
+  };
+
+  const placeholderImageUrl = "https://placehold.co/600x400.png";
+  const currentSrc = imageLoadError || !product.imageUrl ? placeholderImageUrl : product.imageUrl;
+  const currentAlt = imageLoadError || !product.imageUrl ? "Placeholder image" : product.name;
+  const dataAiHintValue = imageLoadError || !product.imageUrl ? "placeholder" : "product package";
 
   return (
     <Card className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
       <CardHeader className="p-0">
         <div className="relative w-full aspect-[4/3] overflow-hidden">
           <Image
-            src={product.imageUrl || "https://placehold.co/600x400.png"}
-            alt={product.name}
+            key={currentSrc} // Add key to help React differentiate if src changes to fallback
+            src={currentSrc}
+            alt={currentAlt}
             fill
             style={{ objectFit: 'cover' }}
             className="transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint="product package"
-            priority={false} // Set priority to false for non-LCP images
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" // Example sizes, adjust as needed
+            onError={handleImageError}
+            data-ai-hint={dataAiHintValue}
+            priority={false}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         </div>
       </CardHeader>

@@ -25,10 +25,16 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'www.test_url.jpg', // Added for the new error
+        hostname: 'www.test_url.jpg',
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'commons.wikimedia.org',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
 };
