@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Product Hub',
+  title: 'YCompany',
   description: 'Manage your products easily.',
 };
 
@@ -26,7 +26,7 @@ export default function RootLayout({
         <header className="bg-card border-b sticky top-0 z-40 shadow-sm">
           <div className="container mx-auto h-16 flex items-center justify-between px-4">
             <Link href="/" className="text-2xl font-bold font-headline text-primary hover:text-primary/90 transition-colors">
-              Product Hub
+              YCompany
             </Link>
             <nav>
               <Button asChild variant="ghost" className="text-foreground hover:text-accent-foreground hover:bg-accent">
@@ -41,7 +41,7 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="bg-card border-t py-6 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Product Hub. All rights reserved.
+          © {new Date().getFullYear()} YCompany. All rights reserved.
         </footer>
         <Toaster />
       </body>
