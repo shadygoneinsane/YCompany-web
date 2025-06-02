@@ -1,7 +1,8 @@
+
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useEffect, useState, useRef, useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useForm, Controller } from "react-hook-form";
@@ -42,7 +43,7 @@ function SubmitButton() {
 }
 
 export default function ProductForm() {
-  const [initialState, action] = useFormState<AddProductActionState | undefined, FormData>(addProductAction, undefined);
+  const [initialState, action] = useActionState<AddProductActionState | undefined, FormData>(addProductAction, undefined);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
