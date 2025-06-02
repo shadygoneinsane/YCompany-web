@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Product } from '@/types';
@@ -28,10 +29,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           <Image
             src={product.imageUrl || "https://placehold.co/600x400.png"}
             alt={product.name}
-            layout="fill"
-            objectFit="cover"
+            fill
+            style={{ objectFit: 'cover' }}
             className="transition-transform duration-300 group-hover:scale-105"
             data-ai-hint="product package"
+            priority={false} // Set priority to false for non-LCP images
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" // Example sizes, adjust as needed
           />
         </div>
       </CardHeader>
