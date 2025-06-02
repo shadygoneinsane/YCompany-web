@@ -19,7 +19,13 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'www.google.com', // Added google.com
+        hostname: 'www.google.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.test_url.jpg', // Added for the new error
         port: '',
         pathname: '/**',
       },
