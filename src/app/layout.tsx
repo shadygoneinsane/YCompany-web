@@ -1,7 +1,7 @@
+
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { PlusCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+// PlusCircle import removed as the button is being removed
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 
@@ -28,13 +28,7 @@ export default function RootLayout({
             <Link href="/" className="text-2xl font-bold font-headline text-primary hover:text-primary/90 transition-colors">
               YCompany
             </Link>
-            <nav>
-              <Button asChild variant="ghost" className="text-foreground hover:text-accent-foreground hover:bg-accent">
-                <Link href="/add-product">
-                  <PlusCircle className="mr-2 h-5 w-5" /> Add Product
-                </Link>
-              </Button>
-            </nav>
+            {/* Navigation section with "Add Product" button removed */}
           </div>
         </header>
         <main className="container mx-auto p-4 sm:p-6 md:p-8 flex-grow">
