@@ -1,18 +1,71 @@
-
 "use server";
 
 import { z } from "zod";
-import { addDoc, collection, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, query, where, getDocs, limit, deleteDoc, doc } from "firebase/firestore";
 // import { getDownloadURL, ref, uploadBytes } from "firebase/storage"; // No longer needed for upload
 import { db } from "@/lib/firebase"; // storage is no longer needed here
 import { revalidatePath } from "next/cache";
 import type { AddProductActionState } from "@/types";
 
+// Custom validation function for image URLs
+function isValidImageUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+    
+    // Check if it's a valid URL
+    if (!urlObj.protocol.startsWith('http')) {
+      return false;
+    }
+
+    // Check for common image file extensions
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.ico'];
+    const hasImageExtension = imageExtensions.some(ext => 
+      urlObj.pathname.toLowerCase().endsWith(ext)
+    );
+
+    // If it has an image extension, it's likely valid
+    if (hasImageExtension) {
+      return true;
+    }
+
+    // For URLs without extensions (like CDN URLs), check if they're from known image services
+    const knownImageServices = [
+      'images.unsplash.com',
+      'picsum.photos',
+      'via.placeholder.com',
+      'placehold.co',
+      'loremflickr.com',
+      'source.unsplash.com',
+      'upload.wikimedia.org',
+      'commons.wikimedia.org'
+    ];
+
+    const isFromKnownService = knownImageServices.some(service => urlObj.hostname.includes(service));
+    
+    // Additional validation for Unsplash URLs
+    if (urlObj.hostname.includes('images.unsplash.com')) {
+      // Unsplash URLs should have a photo ID that's typically 10-11 characters
+      const photoMatch = urlObj.pathname.match(/\/photo-([a-zA-Z0-9]+)/);
+      if (!photoMatch || photoMatch[1].length < 10) {
+        return false;
+      }
+    }
+
+    return isFromKnownService;
+  } catch {
+    return false;
+  }
+}
+
 const ProductFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long."),
   description: z.string().min(10, "Description must be at least 10 characters long."),
   price: z.coerce.number().positive("Price must be a positive number."),
-  imageUrl: z.string().url("Please enter a valid URL for the image."),
+  imageUrl: z.string()
+    .url("Please enter a valid URL for the image.")
+    .refine(isValidImageUrl, {
+      message: "Please enter a valid image URL. For Unsplash, use URLs like 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d'. For other services, ensure the URL points to an actual image file (.jpg, .png, .gif) or a known image service."
+    }),
 });
 
 export async function addProductAction(
@@ -96,5 +149,23 @@ export async function addProductAction(
       detailedMessage += ` (${error.message})`;
     }
     return { message: detailedMessage, success: false, errors: { _form: [detailedMessage] } };
+  }
+}
+
+export async function deleteProductAction(productId: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const productRef = doc(db, "products", productId);
+    await deleteDoc(productRef);
+    revalidatePath("/");
+    return { success: true, message: "Product deleted successfully!" };
+  } catch (error: any) {
+    console.error("Error deleting product:", error);
+    let detailedMessage = "Failed to delete product. Please try again.";
+    if (error.code) {
+      detailedMessage += ` (Error code: ${error.code})`;
+    } else if (error.message) {
+      detailedMessage += ` (${error.message})`;
+    }
+    return { success: false, message: detailedMessage };
   }
 }
