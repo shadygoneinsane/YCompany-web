@@ -19,10 +19,14 @@ export function isValidImageUrl(url: string): boolean {
     // Check for known image hosting patterns
     const isKnownImageHost = 
       urlObj.hostname.includes('placehold.co') ||
+      urlObj.hostname.includes('dummyimage.com') ||
       urlObj.hostname.includes('upload.wikimedia.org') ||
       urlObj.hostname.includes('imgur.com') ||
       urlObj.hostname.includes('unsplash.com') ||
-      urlObj.hostname.includes('pexels.com');
+      urlObj.hostname.includes('picsum.photos') ||
+      urlObj.hostname.includes('pexels.com') ||
+      urlObj.hostname.includes('amazonaws.com') ||
+      urlObj.hostname.includes('cloudinary.com');
     
     return hasImageExtension || isKnownImageHost;
   } catch {

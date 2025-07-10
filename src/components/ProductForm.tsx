@@ -94,7 +94,7 @@ export default function ProductForm() {
               control={control}
               render={({ field }) => <Input id="name" {...field} placeholder="e.g. Premium Coffee Beans" />}
             />
-            {allErrors?.name && Array.isArray(allErrors.name) && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.name) ? allErrors.name[0] : allErrors.name.message}</p>}
+            {allErrors?.name && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.name) ? allErrors.name[0] : allErrors.name.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -104,7 +104,7 @@ export default function ProductForm() {
               control={control}
               render={({ field }) => <Textarea id="description" {...field} placeholder="Describe the product..." rows={4} />}
             />
-            {allErrors?.description && Array.isArray(allErrors.description) && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.description) ? allErrors.description[0] : allErrors.description.message}</p>}
+            {allErrors?.description && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.description) ? allErrors.description[0] : allErrors.description.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -114,7 +114,7 @@ export default function ProductForm() {
               control={control}
               render={({ field }) => <Input id="price" type="number" step="0.01" {...field} placeholder="e.g. 19.99" />}
             />
-            {allErrors?.price && Array.isArray(allErrors.price) && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.price) ? allErrors.price[0] : allErrors.price.message}</p>}
+            {allErrors?.price && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.price) ? allErrors.price[0] : allErrors.price.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -126,7 +126,7 @@ export default function ProductForm() {
                  <Input 
                   id="imageUrl" 
                   type="url"
-                  placeholder="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d"
+                  placeholder="https://dummyimage.com/600x400/4338ca/ffffff&text=Product"
                   {...field}
                 />
               )}
@@ -135,17 +135,17 @@ export default function ProductForm() {
               Enter a direct link to an image file (.jpg, .png, .gif) or use services like Unsplash, Picsum, or Placeholder.
             </p>
             <div className="text-xs text-muted-foreground space-y-1">
-              <p className="font-medium">Example URLs:</p>
+              <p className="font-medium">Example URLs that work:</p>
               <ul className="space-y-1 text-xs">
-                <li>• <code className="bg-muted px-1 rounded">https://picsum.photos/600/400</code></li>
+                <li>• <code className="bg-muted px-1 rounded">https://dummyimage.com/600x400/4338ca/ffffff&text=Product</code></li>
+                <li>• <code className="bg-muted px-1 rounded">https://placehold.co/600x400/blue/white?text=Sample</code></li>
                 <li>• <code className="bg-muted px-1 rounded">https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d</code></li>
-                <li>• <code className="bg-muted px-1 rounded">https://via.placeholder.com/600x400/468BFF/FFFFFF?text=Product</code></li>
               </ul>
             </div>
-            {allErrors?.imageUrl && Array.isArray(allErrors.imageUrl) && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.imageUrl) ? allErrors.imageUrl[0] : allErrors.imageUrl.message}</p>}
+            {allErrors?.imageUrl && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.imageUrl) ? allErrors.imageUrl[0] : allErrors.imageUrl.message}</p>}
           </div>
 
-           {initialState?.errors?._form && Array.isArray(initialState.errors._form) && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{initialState.errors._form[0]}</p>}
+           {initialState?.errors?._form && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{initialState.errors._form[0]}</p>}
         </CardContent>
         <CardFooter>
           <SubmitButton />

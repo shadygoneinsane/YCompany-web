@@ -18,12 +18,6 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'www.google.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
         hostname: 'commons.wikimedia.org',
         port: '',
         pathname: '/**',
@@ -43,6 +37,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'picsum.photos',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'fastly.picsum.photos',
         port: '',
         pathname: '/**',
       },
@@ -90,7 +90,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'static1.anpoimages.com',
+        hostname: 'dummyimage.com',
         port: '',
         pathname: '/**',
       }
