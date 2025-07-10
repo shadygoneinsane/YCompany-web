@@ -1,6 +1,5 @@
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyCU6pDf2Il4rINo_ZTO1qBmPi5D_P0flJA",
@@ -21,6 +20,5 @@ if (!getApps().length) {
 }
 
 const db = getFirestore(app);
-const storage = getStorage(app);
 
-export { app, db, storage };
+export { app, db };

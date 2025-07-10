@@ -8,6 +8,10 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'YCompany',
   description: 'Manage your products easily.',
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

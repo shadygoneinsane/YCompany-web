@@ -1,10 +1,9 @@
 
 "use client";
 
-import { useEffect, useRef, useActionState } from "react"; // useState and Image removed
+import { useEffect, useRef, useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
-// import Image from "next/image"; // No longer needed for preview
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { addProductAction } from "@/actions/productActions";
 import type { ProductFormData, AddProductActionState } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle } from "lucide-react"; // UploadCloud removed
+import { AlertCircle } from "lucide-react";
 import LoadingSpinner from "./ui/loading-spinner";
 
 
@@ -24,7 +23,7 @@ const FormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long."),
   description: z.string().min(10, "Description must be at least 10 characters long."),
   price: z.coerce.number().positive("Price must be a positive number."),
-  imageUrl: z.string().url("Please enter a valid URL for the image."), // Changed from image file
+  imageUrl: z.string().url("Please enter a valid URL for the image."),
 });
 
 
@@ -37,55 +36,40 @@ function SubmitButton() {
   );
 }
 
+const FORM_DEFAULTS = {
+  name: "",
+  description: "",
+  price: 0,
+  imageUrl: "",
+} as const;
+
 export default function ProductForm() {
   const [initialState, action] = useActionState<AddProductActionState | undefined, FormData>(addProductAction, undefined);
-  // const [imagePreview, setImagePreview] = useState<string | null>(null); // Removed image preview
   const router = useRouter();
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
   const {
     control,
-    // handleSubmit, // handleSubmit from RHF is not used with server actions in this setup
     formState: { errors: clientErrors },
-    // setValue, // setValue for image is no longer needed
-    // watch, // watch for image is no longer needed
     reset
   } = useForm<ProductFormData>({
     resolver: zodResolver(FormSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      price: 0,
-      imageUrl: "", // Default imageUrl to empty string
-    },
+    defaultValues: FORM_DEFAULTS,
   });
-  
-  // const selectedImage = watch("image"); // Removed
-
-  // useEffect(() => { // Removed image preview effect
-  //   if (selectedImage) {
-  //     const reader = new FileReader();
-  //     reader.onloadend = () => {
-  //       setImagePreview(reader.result as string);
-  //     };
-  //     reader.readAsDataURL(selectedImage);
-  //   } else {
-  //     setImagePreview(null);
-  //   }
-  // }, [selectedImage]);
 
   useEffect(() => {
-    if (initialState?.success) {
+    if (!initialState?.message) return;
+    
+    if (initialState.success) {
       toast({
         title: "Success!",
         description: initialState.message,
       });
-      reset(); // Reset react-hook-form fields
-      // setImagePreview(null); // Clear image preview - removed
-      formRef.current?.reset(); // Reset the native form element
+      reset();
+      formRef.current?.reset();
       router.push("/");
-    } else if (initialState?.message && !initialState?.success) {
+    } else {
       toast({
         title: "Error",
         description: initialState.message,
@@ -111,7 +95,7 @@ export default function ProductForm() {
               control={control}
               render={({ field }) => <Input id="name" {...field} placeholder="e.g. Premium Coffee Beans" />}
             />
-            {allErrors?.name && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{allErrors.name[0]}</p>}
+            {allErrors?.name && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.name) ? allErrors.name[0] : allErrors.name.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -121,7 +105,7 @@ export default function ProductForm() {
               control={control}
               render={({ field }) => <Textarea id="description" {...field} placeholder="Describe the product..." rows={4} />}
             />
-            {allErrors?.description && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{allErrors.description[0]}</p>}
+            {allErrors?.description && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.description) ? allErrors.description[0] : allErrors.description.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -131,7 +115,7 @@ export default function ProductForm() {
               control={control}
               render={({ field }) => <Input id="price" type="number" step="0.01" {...field} placeholder="e.g. 19.99" />}
             />
-            {allErrors?.price && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{allErrors.price[0]}</p>}
+            {allErrors?.price && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.price) ? allErrors.price[0] : allErrors.price.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -142,24 +126,14 @@ export default function ProductForm() {
               render={({ field }) => (
                  <Input 
                   id="imageUrl" 
-                  type="url" // Changed type to url for better semantics, though text also works
+                  type="url"
                   placeholder="https://example.com/image.png"
                   {...field}
                 />
               )}
             />
-            {allErrors?.imageUrl && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{allErrors.imageUrl[0]}</p>}
+            {allErrors?.imageUrl && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{Array.isArray(allErrors.imageUrl) ? allErrors.imageUrl[0] : allErrors.imageUrl.message}</p>}
           </div>
-
-          {/* Image preview section removed */}
-          {/* {imagePreview && (
-            <div className="mt-4">
-              <Label>Image Preview</Label>
-              <div className="mt-2 relative w-full aspect-video rounded-md overflow-hidden border border-muted">
-                <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="contain" />
-              </div>
-            </div>
-          )} */}
 
            {initialState?.errors?._form && <p className="text-sm text-destructive flex items-center"><AlertCircle className="w-4 h-4 mr-1"/>{initialState.errors._form[0]}</p>}
         </CardContent>

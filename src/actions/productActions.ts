@@ -2,11 +2,11 @@
 "use server";
 
 import { z } from "zod";
-import { addDoc, collection, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore";
-// import { getDownloadURL, ref, uploadBytes } from "firebase/storage"; // No longer needed for upload
-import { db } from "@/lib/firebase"; // storage is no longer needed here
+import { addDoc, collection, serverTimestamp, getDocs, doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { revalidatePath } from "next/cache";
 import type { AddProductActionState } from "@/types";
+import { isValidImageUrl, fixImageUrl } from "@/lib/imageUtils";
 
 const ProductFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long."),
@@ -14,6 +14,20 @@ const ProductFormSchema = z.object({
   price: z.coerce.number().positive("Price must be a positive number."),
   imageUrl: z.string().url("Please enter a valid URL for the image."),
 });
+
+type ProductData = z.infer<typeof ProductFormSchema>;
+
+const PRODUCTS_COLLECTION = "products";
+const ERROR_MESSAGES = {
+  VALIDATION_FAILED: "Validation failed. Please check your inputs.",
+  DUPLICATE_NAME: "A product with this name already exists.",
+  DUPLICATE_CHECK_FAILED: "Failed to verify product name uniqueness. Please try again.",
+  ADD_FAILED: "Failed to add product to database. Please try again.",
+  DELETE_FAILED: "Failed to delete product. Please try again.",
+  PRODUCT_ID_REQUIRED: "Product ID is required for deletion.",
+  PRODUCT_ADDED: "Product added successfully!",
+  PRODUCT_DELETED: "Product deleted successfully.",
+} as const;
 
 export async function addProductAction(
   prevState: AddProductActionState | undefined,
@@ -36,25 +50,35 @@ export async function addProductAction(
 
   const { name, description, price, imageUrl } = validatedFields.data;
 
-  // Check for duplicate product name (case-insensitive)
-  try {
-    const productsRef = collection(db, "products");
-    // Firestore queries are case-sensitive by default.
-    // To do a case-insensitive check, we typically fetch and filter client-side,
-    // or store a lowercase version of the name for querying.
-    // For simplicity here, we'll fetch and then filter, but for large datasets,
-    // storing a lowercase name field (e.g., `name_lowercase`) and querying that would be more efficient.
-    // However, let's try a direct query first. If performance becomes an issue, we can optimize.
-    // A common workaround for case-insensitive search is to query for a range if you normalize the case
-    // e.g. name >= inputName.toLowerCase() and name <= inputName.toLowerCase() + '\uf8ff'
-    // But since we need an exact match (case-insensitive), we'll fetch and filter.
-    // A more direct approach for exact (but case-sensitive) match is:
-    // const q = query(productsRef, where("name", "==", name), limit(1));
-    // For case-insensitive, we'll retrieve potential matches and check in code.
-    // This is not ideal for very large datasets.
-    // A better Firestore pattern is to store a normalized (e.g., lowercase) version of the field
-    // and query against that. For this example, we'll perform a case-insensitive check after fetching.
+  const duplicateCheck = await checkForDuplicateProduct(name);
+  if (!duplicateCheck.success) {
+    return duplicateCheck;
+  }
 
+
+  return await createProduct(validatedFields.data);
+}
+
+export async function deleteProductAction(productId: string): Promise<{ success: boolean; message: string }> {
+  if (!productId) {
+    return { success: false, message: ERROR_MESSAGES.PRODUCT_ID_REQUIRED };
+  }
+  
+  try {
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId);
+    await deleteDoc(productRef);
+    revalidatePath("/");
+    return { success: true, message: ERROR_MESSAGES.PRODUCT_DELETED };
+  } catch (error: any) {
+    console.error("Error deleting product from Firestore:", error);
+    const detailedMessage = formatErrorMessage(ERROR_MESSAGES.DELETE_FAILED, error);
+    return { success: false, message: detailedMessage };
+  }
+}
+
+async function checkForDuplicateProduct(name: string): Promise<AddProductActionState> {
+  try {
+    const productsRef = collection(db, PRODUCTS_COLLECTION);
     const querySnapshot = await getDocs(productsRef);
     const existingProduct = querySnapshot.docs.find(
       (doc) => doc.data().name.toLowerCase() === name.toLowerCase()
@@ -62,39 +86,48 @@ export async function addProductAction(
 
     if (existingProduct) {
       return {
-        errors: { name: ["A product with this name already exists."] },
-        message: "Duplicate product name.",
+        errors: { name: [ERROR_MESSAGES.DUPLICATE_NAME] },
+        message: ERROR_MESSAGES.DUPLICATE_NAME,
         success: false,
       };
     }
+    
+    return { success: true, message: "", errors: null };
   } catch (error: any) {
     console.error("Error checking for duplicate product name:", error);
     return {
-      message: "Failed to verify product name uniqueness. Please try again.",
+      message: ERROR_MESSAGES.DUPLICATE_CHECK_FAILED,
       success: false,
-      errors: { _form: ["Failed to verify product name uniqueness."] },
+      errors: { _form: [ERROR_MESSAGES.DUPLICATE_CHECK_FAILED] },
     };
   }
+}
 
-
+async function createProduct(productData: ProductData): Promise<AddProductActionState> {
   try {
-    await addDoc(collection(db, "products"), {
-      name,
-      description,
-      price,
-      imageUrl,
+    // Fix the image URL before saving
+    const fixedImageUrl = fixImageUrl(productData.imageUrl);
+    
+    await addDoc(collection(db, PRODUCTS_COLLECTION), {
+      ...productData,
+      imageUrl: fixedImageUrl,
       createdAt: serverTimestamp(),
     });
     revalidatePath("/");
-    return { message: "Product added successfully!", success: true, errors: null };
+    return { message: ERROR_MESSAGES.PRODUCT_ADDED, success: true, errors: null };
   } catch (error: any) {
     console.error("Error adding product to Firestore:", error);
-    let detailedMessage = "Failed to add product to database. Please try again.";
-     if (error.code) {
-      detailedMessage += ` (Error code: ${error.code})`;
-    } else if (error.message) {
-      detailedMessage += ` (${error.message})`;
-    }
+    const detailedMessage = formatErrorMessage(ERROR_MESSAGES.ADD_FAILED, error);
     return { message: detailedMessage, success: false, errors: { _form: [detailedMessage] } };
   }
+}
+
+function formatErrorMessage(baseMessage: string, error: any): string {
+  if (error.code) {
+    return `${baseMessage} (Error code: ${error.code})`;
+  }
+  if (error.message) {
+    return `${baseMessage} (${error.message})`;
+  }
+  return baseMessage;
 }
