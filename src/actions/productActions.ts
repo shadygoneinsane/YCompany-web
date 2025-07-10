@@ -1,4 +1,3 @@
-
 "use server";
 
 import { z } from "zod";
@@ -8,11 +7,65 @@ import { revalidatePath } from "next/cache";
 import type { AddProductActionState } from "@/types";
 import { isValidImageUrl, fixImageUrl } from "@/lib/imageUtils";
 
+// Custom validation function for image URLs
+function isValidImageUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+
+    // Check if it's a valid URL
+    if (!urlObj.protocol.startsWith('http')) {
+      return false;
+    }
+
+    // Check for common image file extensions
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.ico'];
+    const hasImageExtension = imageExtensions.some(ext =>
+      urlObj.pathname.toLowerCase().endsWith(ext)
+    );
+
+    // If it has an image extension, it's likely valid
+    if (hasImageExtension) {
+      return true;
+    }
+
+    // For URLs without extensions (like CDN URLs), check if they're from known image services
+    const knownImageServices = [
+      'images.unsplash.com',
+      'picsum.photos',
+      'via.placeholder.com',
+      'placehold.co',
+      'loremflickr.com',
+      'source.unsplash.com',
+      'upload.wikimedia.org',
+      'commons.wikimedia.org'
+    ];
+
+    const isFromKnownService = knownImageServices.some(service => urlObj.hostname.includes(service));
+
+    // Additional validation for Unsplash URLs
+    if (urlObj.hostname.includes('images.unsplash.com')) {
+      // Unsplash URLs should have a photo ID that's typically 10-11 characters
+      const photoMatch = urlObj.pathname.match(/\/photo-([a-zA-Z0-9]+)/);
+      if (!photoMatch || photoMatch[1].length < 10) {
+        return false;
+      }
+    }
+
+    return isFromKnownService;
+  } catch {
+    return false;
+  }
+}
+
 const ProductFormSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters long."),
   description: z.string().min(10, "Description must be at least 10 characters long."),
   price: z.coerce.number().positive("Price must be a positive number."),
-  imageUrl: z.string().url("Please enter a valid URL for the image."),
+  imageUrl: z.string()
+    .url("Please enter a valid URL for the image.")
+    .refine(isValidImageUrl, {
+      message: "Please enter a valid image URL. For Unsplash, use URLs like 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d'. For other services, ensure the URL points to an actual image file (.jpg, .png, .gif) or a known image service."
+    }),
 });
 
 type ProductData = z.infer<typeof ProductFormSchema>;
@@ -63,7 +116,7 @@ export async function deleteProductAction(productId: string): Promise<{ success:
   if (!productId) {
     return { success: false, message: ERROR_MESSAGES.PRODUCT_ID_REQUIRED };
   }
-  
+
   try {
     const productRef = doc(db, PRODUCTS_COLLECTION, productId);
     await deleteDoc(productRef);
@@ -91,7 +144,7 @@ async function checkForDuplicateProduct(name: string): Promise<AddProductActionS
         success: false,
       };
     }
-    
+
     return { success: true, message: "", errors: null };
   } catch (error: any) {
     console.error("Error checking for duplicate product name:", error);
@@ -107,7 +160,7 @@ async function createProduct(productData: ProductData): Promise<AddProductAction
   try {
     // Fix the image URL before saving
     const fixedImageUrl = fixImageUrl(productData.imageUrl);
-    
+
     await addDoc(collection(db, PRODUCTS_COLLECTION), {
       ...productData,
       imageUrl: fixedImageUrl,
@@ -130,4 +183,22 @@ function formatErrorMessage(baseMessage: string, error: any): string {
     return `${baseMessage} (${error.message})`;
   }
   return baseMessage;
+}
+
+export async function deleteProductAction(productId: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const productRef = doc(db, "products", productId);
+    await deleteDoc(productRef);
+    revalidatePath("/");
+    return { success: true, message: "Product deleted successfully!" };
+  } catch (error: any) {
+    console.error("Error deleting product:", error);
+    let detailedMessage = "Failed to delete product. Please try again.";
+    if (error.code) {
+      detailedMessage += ` (Error code: ${error.code})`;
+    } else if (error.message) {
+      detailedMessage += ` (${error.message})`;
+    }
+    return { success: false, message: detailedMessage };
+  }
 }
